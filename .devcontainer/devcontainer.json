@@ -1,0 +1,17 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/ubuntu
+{
+    "name": "hexxy64",
+
+    "image": "ghcr.io/object-object/hexxy64-devcontainer:latest",
+
+    "mounts": [
+        "type=volume,target=/workspaces/hexxy64/.venv",
+        "type=volume,target=/commandhistory"
+    ],
+
+    "postAttachCommand": {
+        "Fix commandhistory permissions": "sudo chown -R vscode: /commandhistory",
+        "Fix workspaces permissions and uv sync": "sudo chown -R vscode /workspaces && uv sync"
+    }
+}

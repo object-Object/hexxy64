@@ -1,0 +1,71 @@
+name: Build riscv-gnu-toolchain
+
+on:
+  workflow_dispatch:
+    inputs:
+      arch:
+        type: string
+        description: Target architecture (./configure --with-arch=...)
+        default: rv64i
+      abi:
+        type: string
+        description: Target ABI (./configure --with-abi=...)
+        default: lp64
+      linux:
+        type: boolean
+        description: Linux
+        default: false
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ghcr.io/object-object/hexxy64-riscv-gnu-toolchain
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Extract image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ inputs.arch }}-${{ inputs.abi }}${{ inputs.linux && '-linux' || '' }}
+            type=raw,value=${{ inputs.arch }}${{ inputs.linux && '-linux' || '' }}
+
+      - name: Build and push image
+        id: push
+        uses: docker/build-push-action@v6
+        with:
+          file: .github/toolchain/Dockerfile
+          context: .github/toolchain
+          build-args: |
+            ARCH=${{ inputs.arch }}
+            ABI=${{ inputs.abi }}
+            MAKE_ARGS=${{ inputs.linux && 'linux' || '' }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-name: ${{ env.IMAGE_NAME }}
+          subject-digest: ${{ steps.push.outputs.digest }}

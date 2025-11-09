@@ -1,0 +1,8 @@
+{
+    "name": "hexxy64",
+
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": "."
+    }
+}
